@@ -9,13 +9,14 @@ function registrar(req, res){
     Empresa.findOne({usuario: parametros.usuario}, (err, empresaEncontrada)=>{
         if(underscore.isEmpty(empresaEncontrada)){
             empresaModel.usuario=parametros.usuario;
-            empresaModel.nombreEmpresa=parametros.nombre;
+            empresaModel.nombreEmpresa=parametros.nombreEmpresa;
             empresaModel.rol='EMPRESA';
             empresaModel.tipoEmpresa=parametros.tipoEmpresa;
             bcrypt.hash(parametros.password,null,null, (err,passwordEncriptada)=>{
                 empresaModel.password=passwordEncriptada
                 empresaModel.save(()=>{});
             })
+            return res.status(200).send({empresa: empresaEncontrada})
         }else{
             return res.status(500).send({mensaje: "El nombre de usuario ya esta en uso, utilice uno diferente"})
         }
@@ -31,7 +32,7 @@ function creacionAdmin() {
         if (underscore.isEmpty(usuarioEncontrado)) {
 
             empresaModel.usuario = 'SuperAdmin';
-            empresaModel.nombre = 'Administrador por Defecto';
+            empresaModel.nombreEmpresa = 'Administrador por Defecto';
             empresaModel.rol = 'ADMIN';
 
             bcrypt.hash('123456', null, null, (err, passwordEncriptada) => {
