@@ -5,4 +5,9 @@ const api = express.Router();
 
 api.post('/registrar', empresaController.registrar);
 api.post('/login', empresaController.login);
+api.post('/agregarE', empresaController.AgregarEmpresa);
+api.put('/editarE/:idEmpresa', empresaController.EditarEmpresa);
+api.delete('/eliminarE/:idEmpresa', empresaController.EliminarEmpresa);
+api.get('/encontrarE', empresaController.BuscarEmpresa);
+
 module.exports = api;
