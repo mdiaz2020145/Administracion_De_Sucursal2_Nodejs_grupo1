@@ -1,7 +1,7 @@
 const Empresa=require('../models/empresas.model')
 const underscore=require('underscore');
 const bcrypt=require('bcrypt-nodejs');
-const jwt=require('jwt-simple')
+const jwt=require('../services/jwt')
 
 function registrar(req, res){
     var parametros=req.body;
@@ -53,28 +53,28 @@ function login(req, res) {
     var parametros = req.body;
     Empresa.findOne({ usuario: parametros.usuario }, (err, empresaEncontrada) => {
         if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
-        if (underscore.isEmpty(empresaEncontrada)) {
+        if(empresaEncontrada){
             bcrypt.compare(parametros.password, empresaEncontrada.password,
                 (err, verificacionPassword) => {
                     if (verificacionPassword) {
                         if (parametros.obtenerToken === 'true') {
                             return res.status(200)
                                 .send({ token: jwt.crearToken(empresaEncontrada) })
-                        } else {
-                            empresaEncontrada.password = undefined;
-                            return res.status(200)
-                                .send({ empresa: "Parametro faltante" })
-                        }
+                            } else {
+                                empresaEncontrada.password = undefined;
+                                return  res.status(200)
+                                    .send({ usuario: empresaEncontrada })
+                            }
 
                     } else {
                         return res.status(500)
                             .send({ mensaje: 'La clave no coincide' });
                     }
                 })
-        } else {
-            return res.status(500)
-                .send({ mensaje: 'Error, la empresa no se encuentra registrada.' })
-        }
+            }else{
+                return res.status(500)
+                .send({ mensaje: 'Error, el usuario no se encuentra registrado.'})
+            }
     })
 }
 
@@ -83,7 +83,8 @@ function AgregarEmpresa (req, res){
     var empresaModelo = new Empresa();
 
     if( parametros.usuario && parametros.nombreEmpresa && parametros.password && parametros.tipoEmpresa) {
-        empresaModelo.email = parametros.email;
+        empresaModelo.usuario = parametros.usuario;
+        empresaModelo.nombreEmpresa=parametros.nombreEmpresa;
         empresaModelo.password = parametros.password;
         empresaModelo.rol = 'EMPRESA';
         empresaModelo.tipoEmpresa = parametros.tipoEmpresa;
