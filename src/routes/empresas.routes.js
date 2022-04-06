@@ -9,5 +9,5 @@ api.post('/agregarE', empresaController.AgregarEmpresa);
 api.put('/editarE/:idEmpresa', empresaController.EditarEmpresa);
 api.delete('/eliminarE/:idEmpresa', empresaController.EliminarEmpresa);
 api.get('/encontrarE', empresaController.BuscarEmpresa);
-
+api.get('/encontrarEId/:idEmpresa', empresaController.BuscarEmpresaId);
 module.exports = api;
