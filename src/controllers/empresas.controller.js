@@ -1,24 +1,24 @@
-const Empresa=require('../models/empresas.model')
-const underscore=require('underscore');
-const bcrypt=require('bcrypt-nodejs');
-const jwt=require('../services/jwt')
+const Empresa = require('../models/empresas.model')
+const underscore = require('underscore');
+const bcrypt = require('bcrypt-nodejs');
+const jwt = require('../services/jwt')
 
-function registrar(req, res){
-    var parametros=req.body;
-    var empresaModel=new Empresa;
-    Empresa.findOne({usuario: parametros.usuario}, (err, empresaEncontrada)=>{
-        if(underscore.isEmpty(empresaEncontrada)){
-            empresaModel.usuario=parametros.usuario;
-            empresaModel.nombreEmpresa=parametros.nombreEmpresa;
-            empresaModel.rol='EMPRESA';
-            empresaModel.tipoEmpresa=parametros.tipoEmpresa;
-            bcrypt.hash(parametros.password,null,null, (err,passwordEncriptada)=>{
-                empresaModel.password=passwordEncriptada
-                empresaModel.save(()=>{});
+function registrar(req, res) {
+    var parametros = req.body;
+    var empresaModel = new Empresa;
+    Empresa.findOne({ usuario: parametros.usuario }, (err, empresaEncontrada) => {
+        if (underscore.isEmpty(empresaEncontrada)) {
+            empresaModel.usuario = parametros.usuario;
+            empresaModel.nombreEmpresa = parametros.nombreEmpresa;
+            empresaModel.rol = 'EMPRESA';
+            empresaModel.tipoEmpresa = parametros.tipoEmpresa;
+            bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
+                empresaModel.password = passwordEncriptada
+                empresaModel.save(() => { });
             })
-            return res.status(200).send({empresa: empresaEncontrada})
-        }else{
-            return res.status(500).send({mensaje: "El nombre de usuario ya esta en uso, utilice uno diferente"})
+            return res.status(200).send({ empresa: empresaEncontrada })
+        } else {
+            return res.status(500).send({ mensaje: "El nombre de usuario ya esta en uso, utilice uno diferente" })
         }
     })
 }
@@ -53,38 +53,38 @@ function login(req, res) {
     var parametros = req.body;
     Empresa.findOne({ usuario: parametros.usuario }, (err, empresaEncontrada) => {
         if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
-        if(empresaEncontrada){
+        if (empresaEncontrada) {
             bcrypt.compare(parametros.password, empresaEncontrada.password,
                 (err, verificacionPassword) => {
                     if (verificacionPassword) {
                         if (parametros.obtenerToken === 'true') {
                             return res.status(200)
                                 .send({ token: jwt.crearToken(empresaEncontrada) })
-                            } else {
-                                empresaEncontrada.password = undefined;
-                                return  res.status(200)
-                                    .send({ usuario: empresaEncontrada })
-                            }
+                        } else {
+                            empresaEncontrada.password = undefined;
+                            return res.status(200)
+                                .send({ empresa: empresaEncontrada })
+                        }
 
                     } else {
                         return res.status(500)
                             .send({ mensaje: 'La clave no coincide' });
                     }
                 })
-            }else{
-                return res.status(500)
-                .send({ mensaje: 'Error, el usuario no se encuentra registrado.'})
-            }
+        } else {
+            return res.status(500)
+                .send({ mensaje: 'Error, el usuario no se encuentra registrado.' })
+        }
     })
 }
 
-function AgregarEmpresa (req, res){
+function AgregarEmpresa(req, res) {
     var parametros = req.body;
     var empresaModelo = new Empresa();
 
-    if( parametros.usuario && parametros.nombreEmpresa && parametros.password && parametros.tipoEmpresa) {
+    if (parametros.usuario && parametros.nombreEmpresa && parametros.password && parametros.tipoEmpresa) {
         empresaModelo.usuario = parametros.usuario;
-        empresaModelo.nombreEmpresa=parametros.nombreEmpresa;
+        empresaModelo.nombreEmpresa = parametros.nombreEmpresa;
         empresaModelo.password = parametros.password;
         empresaModelo.rol = 'EMPRESA';
         empresaModelo.tipoEmpresa = parametros.tipoEmpresa;
@@ -92,64 +92,80 @@ function AgregarEmpresa (req, res){
         bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
             empresaModelo.password = passwordEncriptada;
 
-                 empresaModelo.save((err, empresaGuardada) => {
-                       if(err) return res.status(500).send({ mensaje: "Error en la peticion" });
-                       if(!empresaGuardada) return res.status(404).send( { mensaje: "Error, no se agrego ninguna empresa"});
+            empresaModelo.save((err, empresaGuardada) => {
+                if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
+                if (!empresaGuardada) return res.status(404).send({ mensaje: "Error, no se agrego ninguna empresa" });
 
-                 return res.status(200).send({ empresa: empresaGuardada });
+                return res.status(200).send({ empresa: empresaGuardada });
+            })
         })
-      })
     }
 }
 
-function EditarEmpresa (req, res) {
-    var idE = req.params.idEmpresa;
-    var parametros = req.body;
-    
-        Empresa.findByIdAndUpdate(idE, parametros, { new: true } ,(err, empresaActualizada) => {
-        if (err) return res.status(500).send({ mensaje: 'Error en la peticion'});
-        if(!empresaActualizada) return res.status(404).send( { mensaje: 'Error al editar la empresa'});
+function EditarEmpresa(req, res) {
+    if (req.user.rol == 'ADMIN') {
+        var idE = req.params.idEmpresa;
+        var parametros = req.body;
 
-        return res.status(200).send({ empresa: empresaActualizada});
-    });
+        Empresa.findByIdAndUpdate(idE, parametros, { new: true }, (err, empresaActualizada) => {
+            if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+            if (!empresaActualizada) return res.status(404).send({ mensaje: 'Error al editar la empresa' });
+
+            return res.status(200).send({ empresa: empresaActualizada });
+        });
+    } else {
+        return res.status(200).send({ empresa: 0 });
+    }
 }
 
-function EliminarEmpresa(req, res){
-    var id = req.params.idEmpresa;
-    
-    Empresa.findByIdAndDelete(id, (err, empresaEliminada) => {
-        if(err) return res.status(500).send({ mensaje: 'Error en la peticion'});
-        if(!empresaEliminada) return res.status(404).send( { mensaje: 'Error al eliminar la empresa'});
+function EliminarEmpresa(req, res) {
+    if (req.user.rol == 'ADMIN') {
+        var id = req.params.idEmpresa;
 
-        return res.status(200).send({ empresa: empresaEliminada});
-    })
+        Empresa.findByIdAndDelete(id, (err, empresaEliminada) => {
+            if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+            if (!empresaEliminada) return res.status(404).send({ mensaje: 'Error al eliminar la empresa' });
+
+            return res.status(200).send({ empresa: empresaEliminada });
+        })
+    } else {
+        return res.status(200).send({ empresa: 0 });
+    }
 }
 
-function BuscarEmpresa(req, res){
-    Empresa.find((err, empresaEncontrada) => {
-        if (err) return res.send({ mensaje: "Error: " + err })
+function BuscarEmpresa(req, res) {
+    if (req.user.rol == 'ADMIN') {
+        Empresa.find((err, empresaEncontrada) => {
+            if (err) return res.send({ mensaje: "Error: " + err })
 
-        for (let i = 0; i < empresaEncontrada.length; i++) {
-            console.log(empresaEncontrada[i].nombre)
-        }
+            for (let i = 0; i < empresaEncontrada.length; i++) {
+                console.log(empresaEncontrada[i].nombre)
+            }
 
-        return res.send({ empresa: empresaEncontrada });
-    })
+            return res.status(200).send({ empresa: empresaEncontrada });
+        })
+    } else {
+        return res.status(200).send({ empresa: 0 });
+    }
 }
 
-function BuscarEmpresaId(req,res){
-    var idEmpresa = req.params.idEmpresa
+function BuscarEmpresaId(req, res) {
+    if (req.user.rol == 'ADMIN') {
+        var idEmpresa = req.params.idEmpresa
 
-    Empresa.findById(idEmpresa,(err,empresaEncontrada)=>{
-        if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
-        if (!empresaEncontrada) return res.status(404).send( { mensaje: 'Error al obtener los datos' });
+        Empresa.findById(idEmpresa, (err, empresaEncontrada) => {
+            if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+            if (!empresaEncontrada) return res.status(404).send({ mensaje: 'Error al obtener los datos' });
 
-        return res.status(200).send({ Empresa: empresaEncontrada });
-    })
+            return res.status(200).send({ Empresa: empresaEncontrada });
+        })
+    } else {
+        return res.status(200).send({ Empresa: 0 });
+    }
 }
 
 
-module.exports ={
+module.exports = {
     creacionAdmin,
     registrar,
     login,

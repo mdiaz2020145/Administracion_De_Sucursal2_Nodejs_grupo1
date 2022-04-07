@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 const Schema=mongoose.Schema
 
-const usuariosSchema = Schema({
+const empresaSchema = Schema({
     usuario: String,
     nombreEmpresa: String,
     password: String,
@@ -9,4 +9,4 @@ const usuariosSchema = Schema({
     tipoEmpresa: String
 })
 
-module.exports = mongoose.model('usuarios', usuariosSchema);
+module.exports = mongoose.model('Empresas', empresaSchema);

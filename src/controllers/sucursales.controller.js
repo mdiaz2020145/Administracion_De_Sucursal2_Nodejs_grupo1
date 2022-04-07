@@ -56,15 +56,19 @@ function obtenerSucursalId(req, res){
 }
 
 function obtenerSucursales (req, res) {
-    Sucursal.find({idEmpresa : req.user.sub}, (err, sucursalesObtenidas) => {
-        if (err) return res.send({ mensaje: "Error: " + err })
-
-        for (let i = 0; i < sucursalesObtenidas.length; i++) {
-            console.log(sucursalesObtenidas[i].nombreSucursal)
-        }
-
-        return res.send({ Sucursales: sucursalesObtenidas })
-    }) 
+    if(req.user.rol=='EMPRESA'){
+        Sucursal.find({idEmpresa : req.user.sub}, (err, sucursalesObtenidas) => {
+            if (err) return res.send({ mensaje: "Error: " + err })
+    
+            for (let i = 0; i < sucursalesObtenidas.length; i++) {
+                console.log(sucursalesObtenidas[i].nombreSucursal)
+            }
+    
+            return res.send({ Sucursales: sucursalesObtenidas })
+        }) 
+    }else{
+        return res.status(200).send({ Sucursales: 0 })
+    }
 }
 
 module.exports = {
