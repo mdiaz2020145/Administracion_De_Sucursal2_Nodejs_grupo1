@@ -65,9 +65,9 @@ function EliminarEmpresa(req, res) {
     })
 }
 
+// envio los productos a sucursales
 function envioProductos(req,res){
     var parametros= req.body
-    var distribucionModelo =new DistribucionProducto();
     if(req.user.rol === 'ADMIN'){
         if(parametros.nombreEmpresa && parametros.nombreProducto 
             && parametros.cantidadProducto){
