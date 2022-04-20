@@ -5,8 +5,8 @@ const productosEmpresaSchema = Schema({
     nombreProducto: String,
     nombreProveedor: String,
     cantidad: Number,
-    vendido: Number,
     precio: Number,
+    idEmpresa: { type: Schema.Types.ObjectId, ref: 'Empresas' }
 })
 
 module.exports = mongoose.model('productosEmpresa', productosEmpresaSchema);

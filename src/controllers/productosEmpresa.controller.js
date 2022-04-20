@@ -16,17 +16,17 @@ function AgregarProductoEmpresa(req, res) {
                 productoEmpresaModelo.nombreProveedor = parametros.nombreProveedor;
                 productoEmpresaModelo.cantidad = parametros.cantidad;
                 productoEmpresaModelo.precio = parametros.precio;
-                productoEmpresaModelo.vendido = 0;
+                productoEmpresaModelo.idEmpresa= req.user.sub;
                 Empresa.findOne({ nombreEmpresa: parametros.nombreEmpresa }, (err, empresanEncontrada) => {
                     if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
-                    
 
-                        productoEmpresaModelo.save((err, productoGuardado) => {
-                            if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
-                            if (!productoGuardado) return res.status(404).send({ mensaje: "Error, no se agrego ninguna empresa" });
 
-                            return res.status(200).send({ productoEmpresa: productoGuardado });
-                        })
+                    productoEmpresaModelo.save((err, productoGuardado) => {
+                        if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
+                        if (!productoGuardado) return res.status(404).send({ mensaje: "Error, no se agrego ninguna empresa" });
+
+                        return res.status(200).send({ productoEmpresa: productoGuardado });
+                    })
                 })
             } else {
                 return res.status(200).send({ mesaje: "Este producto ya existe" })
@@ -67,21 +67,66 @@ function EliminarEmpresa(req, res) {
 }
 
 // envio los productos a sucursales
-function envioProductos(req,res){
-    var parametros = req.body; 
-    var DistribucionProducto = new DistribucionProducto();
+function envioProductos(req, res) {
+    var parametros = req.body;
+    var distribucionProducto = new DistribucionProducto();
+    if (parametros.nombreProducto, parametros.cantidadProducto, parametros.sucursal) {
 
-    if(parametros.nombreProducto,parametros.cantidadProducto){
-        DistribucionProducto.idEmpresa = req.user.sub; 
-        DistribucionProducto.idSucursal = req.user.sub; 
-        DistribucionProducto.nombreProducto = parametros.nombreProducto;
-        DistribucionProducto.cantidadProducto = parametros.cantidadProducto;
+        //SE BUSCA LA SUCURSAL EN LA QUE SE QUIERE ENVIAR LOS PRODUCTOS
+        Sucursales.findOne({ nombreSucursal: { $regex: parametros.sucursal, $options: 'i' } }, (err, sucursalEncontrada) => {
+            if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
+            if (!underscore.isEmpty(sucursalEncontrada)) {
 
-        DistribucionProducto.save((err,envioProducto)=>{
-            if(err) return res.status(500).send({ mensaje: "Error en la peticion" });
-            if(!envioProducto) return res.status(404).send( { mensaje: "Error, no se envio Producto"});
-            return res.status(200).send({ Productos: envioProducto });
+                //SI LA SUCURSAL EXISTE SE ASIGNA SU ID AL PRODUCTO
+                Productos.findOne({idEmpresa: req.user.sub, nombreProducto: { $regex: parametros.nombreProducto, $options: 'i' }}, (err, productoEmpresaEncontrado) => {//SE BUSCA EL PRODUCTO QUE SE DESEA ENVIAR
+                    if (err) return res.status(500).send({ mensaje: "Error en la peticion" })
+
+                    if (!underscore.isEmpty(productoEmpresaEncontrado)) {//SI EL PRODUCTO A ENVIAR EXISTE EN BODEGA SE ENVIARA
+
+                        if (productoEmpresaEncontrado.cantidad >= parametros.cantidadProducto) {//SI LA CANTIDAD TOTAL DEL PRODUCTO ES MAYOR A LA QUE SE DESEA ENVIAR LO ENVIARA
+
+                            //SE BUSCA SI EL PRODUCTO YA EXISTE EN LA SUCURSAL
+                            DistribucionProducto.findOne({ nombreProducto: parametros.nombreProducto, idSucursal: sucursalEncontrada._id }, (err, productoSucursalEncontrado) => {
+                                if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
+
+                                if (underscore.isEmpty(productoSucursalEncontrado)) {//SI EL PRODUCTO ES NUEVO ENTONCES SE AGREGARA COMO UN DOCUMENTO NUEVO
+                                    distribucionProducto.nombreProducto = parametros.nombreProducto;
+                                    distribucionProducto.cantidadProducto = parametros.cantidadProducto;
+                                    distribucionProducto.idSucursal = sucursalEncontrada._id;
+                                    distribucionProducto.idEmpresa = req.user.sub;
+                                    distribucionProducto.precio=productoEmpresaEncontrado.precio;
+                                    distribucionProducto.vendido = 0;
+                                    distribucionProducto.save((err, envioProducto) => {
+                                        if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
+                                        if (!envioProducto) return res.status(404).send({ mensaje: "Error, no se envio Producto" });
+                                        let cantidadTotal = parseInt(productoEmpresaEncontrado.cantidad) - parseInt(parametros.cantidadProducto);
+                                        Productos.findByIdAndUpdate(productoEmpresaEncontrado._id, { cantidad: cantidadTotal }, { new: true }, (err, productoSucursalActualizado) => { })
+                                        return res.status(200).send({ Productos: envioProducto });
+                                    })
+                                } else {//SI EL PRODUCTO YA EXISTE EN ESTA SUCURSAL SOLO SE SUMARA SU CANTIDAD A LA EXISTENTE
+                                    let cantidadTotal = parseInt(parametros.cantidadProducto) + parseInt(productoSucursalEncontrado.cantidadProducto);
+                                    DistribucionProducto.findByIdAndUpdate(productoSucursalEncontrado._id, { cantidadProducto: cantidadTotal }, { new: true }, (err, productoSucursalActualizado) => {
+                                        if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
+                                        if (!productoSucursalActualizado) return res.status(404).send({ mensaje: "Error, no se envio Producto" });
+                                        let cantidadT = parseInt(productoEmpresaEncontrado.cantidad) - parseInt(parametros.cantidadProducto);
+                                        Productos.findByIdAndUpdate(productoEmpresaEncontrado._id, { cantidad: cantidadT }, { new: true }, (err, productoSucursalActualizado) => { })
+                                        return res.status(200).send({ Productos: productoSucursalActualizado });
+                                    })
+                                }
+                            })
+                        } else {//SI LA CANTIDAD A ENVIAR ES MAYOR A LA EXISTENTE EN BODEGA NO DEJARA QUE SE REALICE EL ENVIO
+                            return res.status(500).send({ mensaje: "La cantidad de producto en bodega es insuficiente" });
+                        }
+                    } else {//SI NO EXISTE NO LO DEJARA
+                        return res.status(500).send({ mensaje: "El producto que se desea enviar no existe" });
+                    }
+                })
+            } else {
+                return res.status(500).send({ mensaje: "La sucursal a la que desea enviar los productos no existe" });
+            }
         })
+    }else{
+        return res.status(500).send({ mensaje: "Llene todos los campos para continuar" });
     }
 
 }

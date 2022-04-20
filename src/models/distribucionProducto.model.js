@@ -3,7 +3,9 @@ const Schema=mongoose.Schema
 
 const distribucionProductoSchema = Schema({
     nombreProducto: String,
-    cantidadProducto: Number, 
+    cantidadProducto: Number,
+    vendido: Number,
+    precio: Number,
     idEmpresa: { type: Schema.Types.ObjectId, ref: 'Empresas' },
     idSucursal:{type:Schema.Types.ObjectId,ref:'sucursales'}
 
