@@ -6,6 +6,6 @@ const api = express.Router();
 api.post('/agregarProductos',md_autenticacion.Auth,productoEmpresaController.AgregarProductoEmpresa)
 api.put('/editarProductos/:idProductoEmpresa',md_autenticacion.Auth, productoEmpresaController.EditarProductoEmpresa)
 api.delete('/eliminarProductos/:idProductoEmpresa',md_autenticacion.Auth, productoEmpresaController.EliminarEmpresa)
-
+api.post('/envioProductos',md_autenticacion.Auth,productoEmpresaController.envioProductos)
 
 module.exports = api;
