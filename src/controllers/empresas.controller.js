@@ -2,7 +2,6 @@ const Empresa = require('../models/empresas.model')
 const underscore = require('underscore');
 const bcrypt = require('bcrypt-nodejs');
 const jwt = require('../services/jwt')
-const DistribucionProducto = require('../models/distribucionProducto.model')
 
 function registrar(req, res) {
     var parametros = req.body;
@@ -15,7 +14,6 @@ function registrar(req, res) {
             empresaModel.tipoEmpresa = parametros.tipoEmpresa;
             bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
                 empresaModel.password = passwordEncriptada
-                registroSucursal(parametros);
                 empresaModel.save((err, empresaGuardada) => { 
                     return res.status(200).send({ empresa: empresaGuardada })
                 });
@@ -94,7 +92,6 @@ function AgregarEmpresa(req, res) {
 
         bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
             empresaModelo.password = passwordEncriptada;
-            registroSucursal(parametros);
             empresaModelo.save((err, empresaGuardada) => {
                 if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
                 if (!empresaGuardada) return res.status(404).send({ mensaje: "Error, no se agrego ninguna empresa" });
@@ -103,23 +100,6 @@ function AgregarEmpresa(req, res) {
             })
         })
     }
-}
-
-function registroSucursal(parametros){
-
-    DistribucionProducto.find({nombreEmpresa: parametros.nombreEmpresa},(err,empresaEncontrada)=>{
-        if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
-        if(underscore.isEmpty(empresaEncontrada)){
-
-            var distribucionModel = DistribucionProducto();
-            distribucionModel.nombreEmpresa = parametros.nombreEmpresa;
-            distribucionModel.cantidadVendida = 0;
-            distribucionModel.save((err,sucursal)=>{
-                if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
-                if (!sucursal) return res.status(404).send({ mensaje: "Error, no se agrego ninguna sucursal" });
-            })
-        }
-    })
 }
 
 function EditarEmpresa(req, res) {

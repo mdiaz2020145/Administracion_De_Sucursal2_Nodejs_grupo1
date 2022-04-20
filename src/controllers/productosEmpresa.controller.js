@@ -1,26 +1,27 @@
 const Productos = require('../models/productosEmpresa.model')
 const Empresa = require('../models/empresas.model')
 const underscore = require('underscore')
-const DistribucionProducto = require('../models/distribucionProducto.model')
+const Sucursales = require('../models/sucursales.model')
 
 function AgregarProductoEmpresa(req, res) {
     var parametros = req.body;
     var productoEmpresaModelo = new Productos();
-    if (parametros.nombreProducto && parametros.cantidad && parametros.nombreProveedor && parametros.precio) {
-
+    if (parametros.nombreProducto && parametros.cantidad && parametros.nombreProveedor && parametros.precio
+        && parametros.idEmpresa) {
         Productos.findOne({ nombreProducto: parametros.nombreProducto }, (err, productoEncontrado) => {
             if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
             if (underscore.isEmpty(productoEncontrado)) {
-                productoEmpresaModelo.nombreProducto = parametros.nombreProducto;
-                productoEmpresaModelo.nombreProveedor = parametros.nombreProveedor;
-                productoEmpresaModelo.cantidad = parametros.cantidad;
-                productoEmpresaModelo.precio = parametros.precio;
-                productoEmpresaModelo.vendido = 0;
-                Empresa.findOne({ nombreEmpresa: parametros.nombreEmpresa }, (err, empresanEncontrada) => {
+                Empresa.findById(parametros.idEmpresa, (err, empresanEncontrada) => {
                     if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
-                    
-
-                        productoEmpresaModelo.save((err, productoGuardado) => {
+                    console.log(empresanEncontrada)
+                    console.log(parametros.idEmpresa)
+                    productoEmpresaModelo.nombreProducto = parametros.nombreProducto;
+                    productoEmpresaModelo.nombreProveedor = parametros.nombreProveedor;
+                    productoEmpresaModelo.cantidad = parametros.cantidad;
+                    productoEmpresaModelo.precio = parametros.precio;
+                    productoEmpresaModelo.vendido = 0;
+                    productoEmpresaModelo.idEmpresa = empresanEncontrada._id;
+                    productoEmpresaModelo.save((err, productoGuardado) => {
                             if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
                             if (!productoGuardado) return res.status(404).send({ mensaje: "Error, no se agrego ninguna empresa" });
 
@@ -68,50 +69,62 @@ function EliminarEmpresa(req, res) {
 // envio los productos a sucursales
 function envioProductos(req,res){
     var parametros= req.body
-    if(req.user.rol === 'ADMIN'){
-        if(parametros.nombreEmpresa && parametros.nombreProducto 
+    var ingresoFor = false;
+    console.log(req.user.rol)
+    if(req.user.rol === 'EMPRESA'){
+        if(parametros.nombreSucursal && parametros.ubicacion && parametros.nombreProducto
             && parametros.cantidadProducto){
             
-            Empresa.findOne({nombreEmpresa: parametros.nombreEmpresa},(err,empresanEncontrada)=>{
-                if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
-                if(underscore.isEmpty(empresanEncontrada)) return res.status(404).send({ mensaje: 'Esta empresa a enviar no existe'});
-                
-                Productos.findOne({nombreProducto: parametros.nombreProducto},(err,productoEncontrado)=>{
-                    if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+                Productos.findOne({idEmpresa: req.user.sub,nombreProducto: parametros.nombreProducto},(err,productoEncontrado)=>{
+                    if (err) return res.status(500).send({ mensaje: 'Error en la peticion'+err });
                     if(underscore.isEmpty(productoEncontrado)) return res.status(404).send({ mensaje: 'Este producto no exite.'});
+                    console.log(productoEncontrado)
                     if(productoEncontrado.cantidad < parametros.cantidadProducto){
                         return res.status(200).send({productos: 'La cantidad de productos es mayor. Solo hay '+productoEncontrado.cantidad})
                     }else{
 
+                        Sucursales.findOne({nombreSucursal: parametros.nombreSucursal},(err, sucursalEncontrada)=>{
+                            if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+                            if(underscore.isEmpty(sucursalEncontrada)){
+                                var modeloSucursales = Sucursales();
+                                modeloSucursales.nombreSucursal = parametros.nombreSucursal;
+                                modeloSucursales.ubicacion = parametros.ubicacion;
+                                modeloSucursales.save((err,sucursalGuardada)=>{
+                                    if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+                                    if(underscore.isEmpty(sucursalGuardada)) {
+                                        res.status(404).send({sucursales: "Error al momento de guardar la sucursal."})
 
-                        DistribucionProducto.findOne({productos:{$elemMatch:{nombreProducto: parametros.nombreProducto}}},(err,productoVerificado)=>{
-                             if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
-                             if(underscore.isEmpty(productoVerificado)){
-                                 DistribucionProducto.findOneAndUpdate({nombreEmpresa: parametros.nombreEmpresa}, 
-                                     { $push: { productos: { nombreProducto: parametros.nombreProducto,
-                                     cantidadProducto: parametros.cantidadProducto, cantidadVendida: 0 } } }, {new: true}, (err, productoAgregado) => {
-                                         if(err) return res.status(500).send({ mensaje: "Error en la peticion" });
-                                         
-                                         if(!productoAgregado) return res.status(500).send({ mensaje: 'Error al agregar el producto'});
-                                         Productos.findOneAndUpdate({nombreProducto: parametros.nombreProducto},{$inc: {  cantidad: parametros.cantidadProducto * -1, 
-                                             vendido: parametros.cantidadProducto}},{new:true},(err, productoActualizado)=>{
-                                             if(err) return res.status(500).send({ mensaje: "Error en la peticion" }); 
-                                             if(!productoActualizado) return res.status(404).send({ mensaje: "Error al restar productos" });
-                                             return res.status(404).send({productos: productoAgregado})
-                                         })   
-                                 })
-                             }else{
-                                 for (let i = 0; i < productoVerificado.productos.length; i++) {
-                                    if(productoVerificado.productos[i].nombreProducto === parametros.nombreProducto ){
-                                        console.log(productoVerificado.productos[i].nombreProducto)
-                                        console.log(productoVerificado.productos[i].cantidadProducto)
-                                        let cantidadTotal = Number( productoVerificado.productos[i].cantidadProducto) + Number(parametros.cantidadProducto);
-                                       console.log(cantidadTotal)
-                                        DistribucionProducto.findOneAndUpdate({productos:{$elemMatch:{nombreProducto: parametros.nombreProducto}}},
-                                            { "productos.$.cantidadProducto": cantidadTotal}, {new: true}, (err, productoAgregado) => {
-                                                console.log(productoAgregado)
-                                                if(err) return res.status(500).send({ mensaje: "Error en la peticion"+err });
+                                    }else{
+
+                                        /* procedimiento de ingreso producto*/
+                                        
+                                        Sucursales.findOneAndUpdate({nombreSucursal: parametros.nombreSucursal}, 
+                                            { $push: { productos: { nombreProducto: parametros.nombreProducto,
+                                            cantidadProducto: parametros.cantidadProducto, cantidadVendida: 0 } } }, {new: true}, (err, productoAgregado) => {
+                                                if(err) return res.status(500).send({ mensaje: "Error en la peticion" });
+                                                
                                                 if(!productoAgregado) return res.status(500).send({ mensaje: 'Error al agregar el producto'});
+                                                Productos.findOneAndUpdate({nombreProducto: parametros.nombreProducto},{$inc: {  cantidad: parametros.cantidadProducto * -1, 
+                                                    vendido: parametros.cantidadProducto}},{new:true},(err, productoActualizado)=>{
+                                                    if(err) return res.status(500).send({ mensaje: "Error en la peticion" }); 
+                                                    if(!productoActualizado) return res.status(404).send({ mensaje: "Error al restar productos" });
+                                                    return res.status(404).send({productos: productoAgregado})
+                                                })   
+                                        })
+                                    }
+
+
+                                })
+                            }else{
+                                
+                                for (let i = 0; i < sucursalEncontrada.productos.length; i++) {
+                                    if(sucursalEncontrada.productos[i].nombreProducto === parametros.nombreProducto ){
+                                        ingresoFor = true;
+                                        let cantidadTotal = Number( sucursalEncontrada.productos[i].cantidadProducto) + Number(parametros.cantidadProducto);
+                                        Sucursales.findOneAndUpdate({productos:{$elemMatch:{nombreProducto: parametros.nombreProducto}}},
+                                            { "productos.$.cantidadProducto": cantidadTotal}, {new: true}, (err, productoAgregado) => {
+                                                if(err) return res.status(500).send({ mensaje: "Error en la peticion"+err });
+                                                if(underscore.isEmpty(productoAgregado)) return res.status(500).send({ mensaje: 'Error al agregar el producto'});
                                                 Productos.findOneAndUpdate({nombreProducto: parametros.nombreProducto},{$inc: {  cantidad: parametros.cantidadProducto * -1, 
                                                     vendido: parametros.cantidadProducto}},{new:true},(err, productoActualizado)=>{
                                                     if(err) return res.status(500).send({ mensaje: "Error en la peticion"+err }); 
@@ -119,17 +132,32 @@ function envioProductos(req,res){
                                                     return res.status(404).send({productos: productoAgregado})
                                                 })   
                                         })
-
+                         
                                     }
-                                     
                                  }
-                             }
-                        })
+                                 
+                            }
+                            if(ingresoFor === false){
+                                    Sucursales.findOneAndUpdate({nombreSucursal: parametros.nombreSucursal}, 
+                                        { $push: { productos: { nombreProducto: parametros.nombreProducto,
+                                        cantidadProducto: parametros.cantidadProducto, cantidadVendida: 0 } } }, {new: true}, (err, productoAgregado) => {
+                                            if(err) return res.status(500).send({ mensaje: "Error en la peticion" });
+                                            
+                                            if(!productoAgregado) return res.status(500).send({ mensaje: 'Error al agregar el producto'});
+                                            Productos.findOneAndUpdate({nombreProducto: parametros.nombreProducto},{$inc: {  cantidad: parametros.cantidadProducto * -1, 
+                                                vendido: parametros.cantidadProducto}},{new:true},(err, productoActualizado)=>{
+                                                if(err) return res.status(500).send({ mensaje: "Error en la peticion" }); 
+                                                if(!productoActualizado) return res.status(404).send({ mensaje: "Error al restar productos" });
+                                                return res.status(404).send({productos: productoAgregado})
+                                            })   
+                                    })
+                                }
+                            })
+                        
                     }
 
                 })
-            })
-
+            
         }else{
             return res.status(200).send({ productos: "No has llenado todos los campos."});
         }
