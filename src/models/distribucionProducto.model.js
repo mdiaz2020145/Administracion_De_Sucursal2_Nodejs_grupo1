@@ -2,12 +2,11 @@ const mongoose = require('mongoose')
 const Schema=mongoose.Schema
 
 const distribucionProductoSchema = Schema({
-    nombreEmpresa: String,
-    productos:[{
-        nombreProducto: String,
-        cantidadProducto: Number,
-        cantidadVendida:Number  
-    }]
+    nombreProducto: String,
+    cantidadProducto: Number, 
+    idEmpresa: { type: Schema.Types.ObjectId, ref: 'Empresas' },
+    idSucursal:{type:Schema.Types.ObjectId,ref:'sucursales'}
+
 })
 
 module.exports = mongoose.model('DistribucionProducto', distribucionProductoSchema);
