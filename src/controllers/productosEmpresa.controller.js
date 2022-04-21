@@ -102,7 +102,6 @@ function envioProductos(req, res) {
                                     distribucionProducto.nombreProducto = parametros.nombreProducto;
                                     distribucionProducto.cantidadProducto = parametros.cantidadProducto;
                                     distribucionProducto.idSucursal = sucursalEncontrada._id;
-                                    distribucionProducto.idEmpresa = req.user.sub;
                                     distribucionProducto.precio=productoEmpresaEncontrado.precio;
                                     distribucionProducto.vendido = 0;
                                     distribucionProducto.save((err, envioProducto) => {

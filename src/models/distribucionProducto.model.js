@@ -6,7 +6,6 @@ const distribucionProductoSchema = Schema({
     cantidadProducto: Number,
     vendido: Number,
     precio: Number,
-    idEmpresa: { type: Schema.Types.ObjectId, ref: 'Empresas' },
     idSucursal:{type:Schema.Types.ObjectId,ref:'sucursales'}
 
 })
