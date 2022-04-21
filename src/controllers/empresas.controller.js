@@ -15,7 +15,6 @@ function registrar(req, res) {
             empresaModel.tipoEmpresa = parametros.tipoEmpresa;
             bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
                 empresaModel.password = passwordEncriptada
-                registroSucursal(parametros);
                 empresaModel.save((err, empresaGuardada) => {
                     return res.status(200).send({ empresa: empresaGuardada })
                 });

@@ -66,6 +66,18 @@ function EliminarEmpresa(req, res) {
     })
 }
 
+function obtenerProductoEmpresa(req,res){
+    Productos.find((err,productoEmpresaEncontrado)=>{
+        for (let i = 0; i < productoEmpresaEncontrado.length; i++) {
+            console.log(productoEmpresaEncontrado[i].nombre)
+        }
+        if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+        if (!productoEmpresaEncontrado) return res.status(404).send({ mensaje: 'Error al obtener los datos' });
+
+        return res.status(200).send({ Productos: productoEmpresaEncontrado });
+    })
+}
+
 // envio los productos a sucursales
 function envioProductos(req, res) {
     var parametros = req.body;
@@ -135,5 +147,6 @@ module.exports = {
     AgregarProductoEmpresa,
     EditarProductoEmpresa,
     EliminarEmpresa,
-    envioProductos
+    envioProductos,
+    obtenerProductoEmpresa
 }
