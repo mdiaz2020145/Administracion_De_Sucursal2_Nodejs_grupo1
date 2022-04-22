@@ -9,4 +9,5 @@ api.put('/editarProductos/:idProductoEmpresa',[md_autenticacion.Auth,md_rol.verE
 api.delete('/eliminarProductos/:idProductoEmpresa',[md_autenticacion.Auth,md_rol.verEmpresa], productoEmpresaController.EliminarEmpresa)
 api.post('/envioProductos',[md_autenticacion.Auth,md_rol.verEmpresa],productoEmpresaController.envioProductos)
 api.get('/obtenerProductoEmpresa',[md_autenticacion.Auth,md_rol.verEmpresa],productoEmpresaController.obtenerProductoEmpresa)
+api.get('/obtenerProductoId/:idProducto', [md_autenticacion.Auth,md_rol.verEmpresa],productoEmpresaController.BuscarProductoId)
 module.exports = api;

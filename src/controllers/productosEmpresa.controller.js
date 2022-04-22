@@ -136,7 +136,16 @@ function envioProductos(req, res) {
     }else{
         return res.status(500).send({ mensaje: "Llene todos los campos para continuar" });
     }
+}
 
+function BuscarProductoId(req, res) {
+    var idProd = req.params.idProducto
+    Productos.findById(idProd, (err, productoEncontrado) => {
+        if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+        if (!productoEncontrado) return res.status(404).send({ mensaje: 'Error al obtener los datos' });
+
+        return res.status(200).send({ Producto: productoEncontrado });
+    })
 }
 
 module.exports = {
@@ -144,5 +153,6 @@ module.exports = {
     EditarProductoEmpresa,
     EliminarEmpresa,
     envioProductos,
-    obtenerProductoEmpresa
+    obtenerProductoEmpresa,
+    BuscarProductoId
 }
