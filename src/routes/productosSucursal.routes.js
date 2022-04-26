@@ -5,4 +5,5 @@ const md_rol= require('../middlewares/roles');
 const api = express.Router();
 
 api.get('/obtenerProductosSucursal/:idSucursal',[md_autenticacion.Auth,md_rol.verEmpresa],productoSucursalController.obtenerProductoSucursal)
+api.put('/simularVenta/:nombreProducto', [md_autenticacion.Auth,md_rol.verEmpresa],productoSucursalController.simularVenta)
 module.exports = api;
