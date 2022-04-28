@@ -148,11 +148,62 @@ function BuscarProductoId(req, res) {
     })
 }
 
+//Obtener por nombre
+function BuscarProductoNombre(req,res){
+    var nombreProducto = req.params.nombreProducto; 
+
+    Productos.find({nombreProducto:{$regex:nombreProducto,$options:'i'}},(err,productoEncontrado)=>{
+        if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+        if (!productoEncontrado) return res.status(404).send({ mensaje: 'Error al obtener los datos' });
+        return res.status(200).send({ Producto: productoEncontrado });
+    })
+}
+
+//Obtener Por nombre del proveedor
+function BuscarProductoProveedor(req,res){
+    var nombreProveedor = req.params.nombreProveedor;
+
+    Productos.find({nombreProveedor:{$regex:nombreProveedor,$options:'i'}},(err,productoEncontrado)=>{
+        if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+        if (!productoEncontrado) return res.status(404).send({ mensaje: 'Error al obtener los datos' });
+        return res.status(200).send({ Producto: productoEncontrado });
+    })
+}
+
+
+//Obtener Por Stock 
+//Obtener Mayor a Menor
+function BuscarProductoStockMayorMenor(req, res) {
+    Productos.find().sort({cantidad : -1 }).exec((err, productoEncontrado) => {
+        if (!underscore.isEmpty(productoEncontrado)) {
+            return res.status(200).send({ Cantidad: productoEncontrado })
+        } else {
+            return res.status(500).send({ mensaje: "No hay productos que mostrar" })
+        }
+    })
+}
+
+//Obtener Menor a Mayor
+function BuscarProductoStockMenorMayor(req, res) {
+    Productos.find().sort({cantidad : +1 }).exec((err, productoEncontrado) => {
+        if (!underscore.isEmpty(productoEncontrado)) {
+            return res.status(200).send({ Cantidad: productoEncontrado })
+        } else {
+            return res.status(500).send({ mensaje: "No hay productos que mostrar" })
+        }
+    })
+}
+
+
 module.exports = {
     AgregarProductoEmpresa,
     EditarProductoEmpresa,
     EliminarEmpresa,
     envioProductos,
     obtenerProductoEmpresa,
-    BuscarProductoId
+    BuscarProductoId,
+    BuscarProductoNombre,
+    BuscarProductoProveedor,
+    BuscarProductoStockMayorMenor,
+    BuscarProductoStockMenorMayor
 }
