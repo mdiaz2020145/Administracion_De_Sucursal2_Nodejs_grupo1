@@ -13,14 +13,14 @@ function obtenerProductoSucursal(req, res) {
 }
 
 function simularVenta(req, res) {
-    var nombreProducto=req.params.nombreProducto;
+    var idSucursal=req.params.idSucursal;
     var parametros=req.body;
-    DistribucionProducto.findOne({nombreProducto:{$regex: nombreProducto, $options: 'i'}},(err,productoSucursal)=>{
+    DistribucionProducto.findOne({nombreProducto:{$regex: parametros.nombreProducto, $options: 'i'}, idSucursal: idSucursal},(err,productoSucursal)=>{
         if(err) return res.status(500).send({ mensaje: 'Error en la peticion' });
         if(!underscore.isEmpty(productoSucursal)){
-            if(productoSucursal.cantidadProducto>=parametros.cantidad){
-                let cantidadRestante=parseInt(productoSucursal.cantidadProducto)-parseInt(parametros.cantidad);
-                let vendido=parseInt(productoSucursal.vendido)+parseInt(parametros.cantidad);
+            if(productoSucursal.cantidadProducto>=parametros.cantidadProducto){
+                let cantidadRestante=parseInt(productoSucursal.cantidadProducto)-parseInt(parametros.cantidadProducto);
+                let vendido=parseInt(productoSucursal.vendido)+parseInt(parametros.cantidadProducto);
                 DistribucionProducto.findByIdAndUpdate(productoSucursal._id, { cantidadProducto: cantidadRestante, vendido: vendido}, {new: true }, 
                     (err, productoSucursalActualizado) => {
                         if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
@@ -37,7 +37,20 @@ function simularVenta(req, res) {
     })
 }
 
+//Obtener por nombre
+function BuscarProductoSucursalNombre(req,res){
+    var idSucursal=req.params.idSucursal;
+    var nombreProducto=req.params.nombreProducto;
+
+    DistribucionProducto.findOne({nombreProducto:{$regex: nombreProducto, $options: 'i'}, idSucursal: idSucursal},(err,productoEncontrado)=>{
+        if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
+        if (!productoEncontrado) return res.status(404).send({ mensaje: 'Error al obtener los datos, no se encontro nada' });
+        return res.status(200).send({ Producto: productoEncontrado });
+    })
+}
+
 module.exports={
     obtenerProductoSucursal,
-    simularVenta
+    simularVenta,
+    BuscarProductoSucursalNombre
 }
